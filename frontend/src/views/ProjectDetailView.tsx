@@ -1,0 +1,738 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  ArrowLeft,
+  MapPin,
+  Calendar,
+  Layers,
+  Archive,
+  Plus,
+  CheckCircle2,
+  Clock,
+  Sparkles,
+  ChevronRight,
+  Info,
+  Coins,
+  Map,
+} from 'lucide-react';
+import { Project, Scenario, DevelopmentType, LandInput } from '../types';
+import { UpcomingModuleCard } from '../components/UpcomingModuleCard';
+import { CreateScenarioModal } from '../components/CreateScenarioModal';
+import { LandWorkspace } from './LandWorkspace';
+import { api } from '../services/api';
+import { formatCurrency, formatNumber } from '../utils/formatters';
+
+interface ProjectDetailViewProps {
+  project: Project;
+  onBack: () => void;
+  onProjectUpdated: (updated: Project) => void;
+}
+
+type TabType =
+  | 'overview'
+  | 'land'
+  | 'costs'
+  | 'sales'
+  | 'funding'
+  | 'schedule'
+  | 'cashflow'
+  | 'scenarios'
+  | 'reports';
+
+const formatDevType = (type: DevelopmentType): string => {
+  const map: Record<DevelopmentType, string> = {
+    residential_subdivision: 'Land Subdivision',
+    multi_unit_residential: 'Multi-Unit Residential',
+    townhouses: 'Townhouses',
+    commercial_mixed_use: 'Commercial / Mixed-Use',
+    industrial: 'Industrial',
+    retail: 'Retail',
+    other: 'Other',
+  };
+  return map[type] || type;
+};
+
+export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
+  project,
+  onBack,
+  onProjectUpdated,
+}) => {
+  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [selectedScenarioId, setSelectedScenarioId] = useState<string>(() => {
+    const baseline = project.scenarios.find((s) => s.is_baseline);
+    return baseline ? baseline.id : project.scenarios[0]?.id || '';
+  });
+  const [isScenarioModalOpen, setIsScenarioModalOpen] = useState(false);
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const [activeScenarioLand, setActiveScenarioLand] = useState<LandInput | null>(null);
+
+  const activeScenario =
+    project.scenarios.find((s) => s.id === selectedScenarioId) || project.scenarios[0];
+
+  // Fetch land data for the active scenario to power overview preview
+  const fetchActiveScenarioLand = useCallback(async () => {
+    if (!activeScenario) return;
+    try {
+      const land = await api.getLand(project.id, activeScenario.id);
+      setActiveScenarioLand(land);
+    } catch {
+      setActiveScenarioLand(null);
+    }
+  }, [project.id, activeScenario]);
+
+  useEffect(() => {
+    fetchActiveScenarioLand();
+  }, [fetchActiveScenarioLand]);
+
+  const handleScenarioCreated = async (newScenario: Scenario) => {
+    const updated = await api.getProject(project.id);
+    onProjectUpdated(updated);
+    setSelectedScenarioId(newScenario.id);
+  };
+
+  const handleSetBaseline = async (scenarioId: string) => {
+    try {
+      await api.updateScenario(scenarioId, { is_baseline: true });
+      const updated = await api.getProject(project.id);
+      onProjectUpdated(updated);
+    } catch (err) {
+      console.error('Failed to set baseline scenario:', err);
+    }
+  };
+
+  const handleArchiveProject = async () => {
+    if (
+      window.confirm(
+        `Are you sure you want to archive "${project.name}"? You can restore it later.`
+      )
+    ) {
+      setArchiveLoading(true);
+      try {
+        await api.archiveProject(project.id);
+        onBack();
+      } catch (err) {
+        console.error('Failed to archive project:', err);
+      } finally {
+        setArchiveLoading(false);
+      }
+    }
+  };
+
+  const isLandConfigured =
+    activeScenarioLand &&
+    parseFloat(String(activeScenarioLand.purchase_price || 0)) > 0;
+
+  return (
+    <div>
+      {/* Workspace Header */}
+      <div className="workspace-header">
+        <div className="workspace-header-top">
+          <div>
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={onBack}
+              style={{ marginBottom: '12px' }}
+            >
+              <ArrowLeft size={15} />
+              <span>Back to Projects</span>
+            </button>
+            <div className="workspace-title-row">
+              <h1 className="workspace-title">{project.name}</h1>
+              <span className={`badge badge-${project.status}`}>{project.status}</span>
+              <span className="badge badge-type">{formatDevType(project.development_type)}</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Layers size={16} color="#64748b" />
+              <select
+                className="select-control"
+                style={{ fontWeight: 600 }}
+                value={selectedScenarioId}
+                onChange={(e) => setSelectedScenarioId(e.target.value)}
+              >
+                {project.scenarios.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} {s.is_baseline ? '⭐ (Baseline)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={handleArchiveProject}
+              disabled={archiveLoading}
+              title="Archive Project (Soft Delete)"
+            >
+              <Archive size={15} />
+              <span>Archive</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="workspace-meta-bar">
+          {project.location && (
+            <div className="meta-segment">
+              <MapPin size={15} color="#64748b" />
+              <span>{project.location}</span>
+            </div>
+          )}
+          <div className="meta-segment">
+            <Calendar size={15} color="#64748b" />
+            <span>
+              Commencement: <strong>{project.start_date || 'TBD'}</strong> → Completion:{' '}
+              <strong>{project.target_completion_date || 'TBD'}</strong>
+            </span>
+          </div>
+          <div className="meta-segment">
+            <Clock size={15} color="#64748b" />
+            <span>
+              Active Scenario: <strong>{activeScenario?.name || 'Baseline'}</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* Sub-Navigation Tabs */}
+        <div className="workspace-tabs">
+          <button
+            className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+            onClick={() => setActiveTab('overview')}
+          >
+            <span>Overview</span>
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'land' ? 'active' : ''}`}
+            onClick={() => setActiveTab('land')}
+          >
+            <span>Land & Acquisition</span>
+            <span
+              className="tab-badge-indicator"
+              style={{
+                backgroundColor: isLandConfigured ? '#ecfdf5' : '#f1f5f9',
+                color: isLandConfigured ? '#047857' : '#64748b',
+                fontWeight: 600,
+              }}
+            >
+              {isLandConfigured ? 'Active' : 'Setup'}
+            </span>
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'costs' ? 'active' : ''}`}
+            onClick={() => setActiveTab('costs')}
+          >
+            <span>Costs</span>
+            <span className="tab-badge-indicator">Phase 3</span>
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'sales' ? 'active' : ''}`}
+            onClick={() => setActiveTab('sales')}
+          >
+            <span>Sales</span>
+            <span className="tab-badge-indicator">Phase 3</span>
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'funding' ? 'active' : ''}`}
+            onClick={() => setActiveTab('funding')}
+          >
+            <span>Funding</span>
+            <span className="tab-badge-indicator">Phase 3</span>
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'schedule' ? 'active' : ''}`}
+            onClick={() => setActiveTab('schedule')}
+          >
+            <span>Schedule</span>
+            <span className="tab-badge-indicator">Phase 3</span>
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'cashflow' ? 'active' : ''}`}
+            onClick={() => setActiveTab('cashflow')}
+          >
+            <span>Cash Flow</span>
+            <span className="tab-badge-indicator">Phase 3</span>
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'scenarios' ? 'active' : ''}`}
+            onClick={() => setActiveTab('scenarios')}
+          >
+            <span>Scenarios ({project.scenarios.length})</span>
+          </button>
+
+          <button
+            className={`tab-btn ${activeTab === 'reports' ? 'active' : ''}`}
+            onClick={() => setActiveTab('reports')}
+          >
+            <span>Reports</span>
+            <span className="tab-badge-indicator">Phase 4</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Workspace Body */}
+      <div className="view-container">
+        {activeTab === 'overview' && (
+          <div className="overview-grid">
+            <div>
+              {/* Project Scope & Metadata Card */}
+              <div className="content-card">
+                <div className="card-header-flex">
+                  <h3 className="card-title">Project Definition & Scope</h3>
+                  <span className="badge badge-active">Active Workspace</span>
+                </div>
+
+                <p
+                  style={{
+                    fontSize: '0.92rem',
+                    color: 'var(--text-secondary)',
+                    marginBottom: '20px',
+                    lineHeight: '1.6',
+                  }}
+                >
+                  {project.description || 'No detailed scope description provided for this project.'}
+                </p>
+
+                <div className="info-field-grid">
+                  <div className="info-field">
+                    <span className="info-label">Development Typology</span>
+                    <span className="info-val">{formatDevType(project.development_type)}</span>
+                  </div>
+
+                  <div className="info-field">
+                    <span className="info-label">Current Status</span>
+                    <span className="info-val" style={{ textTransform: 'capitalize' }}>
+                      {project.status}
+                    </span>
+                  </div>
+
+                  <div className="info-field">
+                    <span className="info-label">Commencement Date</span>
+                    <span className="info-val">{project.start_date || 'Not set'}</span>
+                  </div>
+
+                  <div className="info-field">
+                    <span className="info-label">Target Completion</span>
+                    <span className="info-val">{project.target_completion_date || 'Not set'}</span>
+                  </div>
+
+                  <div className="info-field">
+                    <span className="info-label">Primary Site Location</span>
+                    <span className="info-val">{project.location || 'Not specified'}</span>
+                  </div>
+
+                  <div className="info-field">
+                    <span className="info-label">Tenant Organization</span>
+                    <span className="info-val">Apex Property Group</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Land Acquisition Summary Card */}
+              <div className="content-card">
+                <div className="card-header-flex">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Map size={18} color="#2563eb" />
+                    <h3 className="card-title">Land Acquisition Summary</h3>
+                  </div>
+                  <span
+                    className={`badge ${isLandConfigured ? 'badge-active' : 'badge-draft'}`}
+                  >
+                    {isLandConfigured ? 'Configured' : 'Not Configured'}
+                  </span>
+                </div>
+
+                {isLandConfigured && activeScenarioLand ? (
+                  <div>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                        gap: '16px',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <div className="info-field">
+                        <span className="info-label">Purchase Price</span>
+                        <span className="info-val" style={{ fontFamily: 'var(--font-mono)' }}>
+                          {formatCurrency(activeScenarioLand.purchase_price)}
+                        </span>
+                      </div>
+
+                      <div className="info-field">
+                        <span className="info-label">Acquisition Duties & Fees</span>
+                        <span className="info-val" style={{ fontFamily: 'var(--font-mono)' }}>
+                          {formatCurrency(activeScenarioLand.calculations.total_acquisition_costs)}
+                        </span>
+                      </div>
+
+                      <div className="info-field">
+                        <span className="info-label">Total Land Acquisition</span>
+                        <span
+                          className="info-val"
+                          style={{
+                            fontFamily: 'var(--font-mono)',
+                            color: '#047857',
+                            fontWeight: 700,
+                          }}
+                        >
+                          {formatCurrency(activeScenarioLand.calculations.total_land_acquisition)}
+                        </span>
+                      </div>
+
+                      <div className="info-field">
+                        <span className="info-label">Site Area</span>
+                        <span className="info-val">
+                          {activeScenarioLand.site_area
+                            ? `${formatNumber(activeScenarioLand.site_area)} ${activeScenarioLand.site_area_unit}`
+                            : 'Unspecified'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      className="btn btn-outline btn-sm"
+                      onClick={() => setActiveTab('land')}
+                    >
+                      <span>Manage Land Assumptions</span>
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '16px 0', color: '#64748b' }}>
+                    <p style={{ fontSize: '0.88rem', marginBottom: '12px' }}>
+                      Land purchase terms and acquisition cost items have not yet been configured for{' '}
+                      <strong>{activeScenario.name}</strong>.
+                    </p>
+                    <button
+                      className="btn btn-primary btn-sm"
+                      onClick={() => setActiveTab('land')}
+                    >
+                      <Coins size={14} />
+                      <span>Setup Land & Acquisition</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Feasibility Metric Preview */}
+              <div
+                className="content-card"
+                style={{
+                  background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                  color: '#ffffff',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                  <Sparkles size={20} color="#60a5fa" />
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc' }}>
+                    Financial Calculation Engine
+                  </h3>
+                </div>
+                <p style={{ fontSize: '0.88rem', color: '#94a3b8', lineHeight: '1.6', marginBottom: '16px' }}>
+                  Land acquisition subtotals are now computed deterministically via the backend calculation engine (`backend/app/calculations/costs.py`).
+                  Future phases will integrate construction costing, unit sales phasing, and cash flow schedules.
+                </p>
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                    gap: '12px',
+                    padding: '12px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }}
+                >
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>
+                      Total Land Acq
+                    </span>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 700, color: '#34d399' }}>
+                      {activeScenarioLand
+                        ? formatCurrency(activeScenarioLand.calculations.total_land_acquisition)
+                        : '$0'}
+                    </p>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>
+                      Total Dev Cost
+                    </span>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 700, color: '#e2e8f0' }}>
+                      Phase 3
+                    </p>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>
+                      Dev Margin
+                    </span>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 700, color: '#94a3b8' }}>
+                      Phase 3
+                    </p>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>
+                      Project IRR
+                    </span>
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 700, color: '#94a3b8' }}>
+                      Phase 3
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Side: Scenario Management & Next Actions */}
+            <div>
+              <div className="content-card">
+                <div className="card-header-flex">
+                  <h3 className="card-title">Project Scenarios</h3>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    onClick={() => setIsScenarioModalOpen(true)}
+                  >
+                    <Plus size={14} />
+                    <span>New</span>
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {project.scenarios.map((scen) => (
+                    <div
+                      key={scen.id}
+                      className={`scenario-item-card ${
+                        selectedScenarioId === scen.id ? 'is-active-baseline' : ''
+                      }`}
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setSelectedScenarioId(scen.id)}
+                    >
+                      <div className="scenario-item-info">
+                        <div className="scenario-name-row">
+                          <span className="scenario-title">{scen.name}</span>
+                          {scen.is_baseline && (
+                            <span className="badge badge-baseline">Baseline</span>
+                          )}
+                        </div>
+                        {scen.description && (
+                          <span className="scenario-desc">{scen.description}</span>
+                        )}
+                      </div>
+
+                      <ChevronRight
+                        size={16}
+                        color={selectedScenarioId === scen.id ? '#2563eb' : '#94a3b8'}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Feasibility Workflow Roadmap */}
+              <div className="content-card">
+                <h3 className="card-title" style={{ marginBottom: '14px' }}>
+                  Feasibility Workflow
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.84rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#047857' }}>
+                    <CheckCircle2 size={16} />
+                    <strong>Phase 1: Project Setup & Baseline</strong>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#047857' }}>
+                    <CheckCircle2 size={16} />
+                    <strong>Phase 2: Land & Acquisition Engine</strong>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
+                    <Info size={16} />
+                    <span>Phase 3: Development Costs & Sales Mix</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
+                    <Info size={16} />
+                    <span>Phase 4: Funding, Cash Flow & Reports</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Fully Functional Land & Acquisition Workspace */}
+        {activeTab === 'land' && (
+          <LandWorkspace
+            projectId={project.id}
+            scenario={activeScenario}
+            onLandUpdated={(updated) => setActiveScenarioLand(updated)}
+          />
+        )}
+
+        {activeTab === 'scenarios' && (
+          <div>
+            <div className="page-header">
+              <div>
+                <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                  Feasibility Scenarios
+                </h2>
+                <p className="page-subtitle">
+                  Create and manage scenario branches to test yield variations, cost inflations, and planning options.
+                </p>
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={() => setIsScenarioModalOpen(true)}
+              >
+                <Plus size={16} />
+                <span>Create Scenario</span>
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gap: '16px' }}>
+              {project.scenarios.map((scen) => (
+                <div
+                  key={scen.id}
+                  className="content-card"
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: 0,
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        {scen.name}
+                      </h4>
+                      {scen.is_baseline ? (
+                        <span className="badge badge-baseline">Primary Baseline</span>
+                      ) : (
+                        <span className="badge badge-draft">Alternate Scheme</span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                      {scen.description || 'No scenario description provided.'}
+                    </p>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      Created: {new Date(scen.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+
+                  <div>
+                    {!scen.is_baseline && (
+                      <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => handleSetBaseline(scen.id)}
+                      >
+                        <span>Set as Baseline</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'costs' && (
+          <UpcomingModuleCard
+            moduleName="Development Costs"
+            phase="Phase 3"
+            description="Itemize construction costs, professional consultant fees, statutory authority contributions, contingency, and cost escalation."
+            features={[
+              'Categorized cost breakdown (Acquisition, Professional, Construction, Statutory, Contingency)',
+              'Rate-per-m² Gross Floor Area (GFA) and unit rate calculations',
+              'Builder margin and construction contingency buffers',
+              'Inflation and price escalation curves',
+            ]}
+            iconName="costs"
+          />
+        )}
+
+        {activeTab === 'sales' && (
+          <UpcomingModuleCard
+            moduleName="Sales & Gross Realisation Value"
+            phase="Phase 3"
+            description="Configure product unit mix, pricing schedules, sales commissions, marketing allowances, and settlement phasing."
+            features={[
+              'Product unit mix table (1-Bed, 2-Bed, Penthouse, Retail suites)',
+              'Gross Realisation Value (GRV) calculation engine',
+              'GST treatment & Margin Scheme calculations',
+              'Agent commission & marketing budget allocations',
+            ]}
+            iconName="sales"
+          />
+        )}
+
+        {activeTab === 'funding' && (
+          <UpcomingModuleCard
+            moduleName="Capital Stack & Funding"
+            phase="Phase 3"
+            description="Structure senior debt facilities, mezzanine loans, developer equity, interest capitalisation, and line fee schedules."
+            features={[
+              'Senior debt Loan-to-Cost (LTC) and Loan-to-Value (LVR) limits',
+              'Interest rates, line fees, and capitalisation schedules',
+              'Mezzanine & joint-venture equity waterfall distributions',
+              'Debt drawdowns and peak debt exposure tracking',
+            ]}
+            iconName="funding"
+          />
+        )}
+
+        {activeTab === 'schedule' && (
+          <UpcomingModuleCard
+            moduleName="Project Timeline & Phasing"
+            phase="Phase 3"
+            description="Map development phases from DA approval, demolition, construction, presales milestones to final title registration."
+            features={[
+              'Gantt milestone scheduling for planning, construction, and settlement',
+              'Presales hurdle requirements before debt drawdown',
+              'Duration variance sensitivity',
+            ]}
+            iconName="schedule"
+          />
+        )}
+
+        {activeTab === 'cashflow' && (
+          <UpcomingModuleCard
+            moduleName="Monthly Cash Flow & S-Curve"
+            phase="Phase 3"
+            description="Calculate monthly deterministic cash flow phasing, construction S-curves, cumulative net cash flow, and monthly finance costs."
+            features={[
+              'Deterministic monthly/quarterly cash flow projections',
+              'Standard Bell / S-curve distribution algorithms for construction',
+              'Monthly capital drawdowns and interest compounding',
+              'Project IRR & Equity IRR calculated on cash flow dates',
+            ]}
+            iconName="cashflow"
+          />
+        )}
+
+        {activeTab === 'reports' && (
+          <UpcomingModuleCard
+            moduleName="Feasibility Reporting & Export"
+            phase="Phase 4"
+            description="Generate bank-ready feasibility summary packs, detailed cost schedules, scenario comparisons, and Excel models."
+            features={[
+              'Bank-ready Executive Feasibility Summary PDF',
+              'Full multi-period cash flow export to Excel (.xlsx)',
+              'Side-by-side scenario comparison matrix',
+            ]}
+            iconName="reports"
+          />
+        )}
+      </div>
+
+      <CreateScenarioModal
+        isOpen={isScenarioModalOpen}
+        projectId={project.id}
+        onClose={() => setIsScenarioModalOpen(false)}
+        onSuccess={handleScenarioCreated}
+      />
+    </div>
+  );
+};

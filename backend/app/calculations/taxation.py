@@ -73,6 +73,7 @@ def calculate_stamp_duty(
 def calculate_gst_margin_scheme(
     gross_sale_price: Decimal,
     land_purchase_price: Decimal,
+    total_input_tax_credits: Decimal = Decimal("0.00"),
     use_margin_scheme: bool = True
 ) -> Dict[str, Decimal]:
     """
@@ -82,10 +83,13 @@ def calculate_gst_margin_scheme(
     """
     sale_price = gross_sale_price if gross_sale_price is not None else Decimal("0.00")
     land_cost = land_purchase_price if land_purchase_price is not None else Decimal("0.00")
+    itcs = total_input_tax_credits if total_input_tax_credits is not None else Decimal("0.00")
 
     if sale_price <= Decimal("0.00"):
         return {
-            "gst_payable": Decimal("0.00"),
+            "gst_payable_on_sales": Decimal("0.00"),
+            "input_tax_credits": Decimal("0.00"),
+            "net_gst_liability": Decimal("0.00"),
             "net_revenue_ex_gst": Decimal("0.00"),
             "margin_scheme_applied": use_margin_scheme,
         }
@@ -97,9 +101,12 @@ def calculate_gst_margin_scheme(
         gst_payable = sale_price / Decimal("11.0")
 
     net_rev = sale_price - gst_payable
+    net_gst_liability = gst_payable - itcs
 
     return {
-        "gst_payable": round(gst_payable, 2),
+        "gst_payable_on_sales": round(gst_payable, 2),
+        "input_tax_credits": round(itcs, 2),
+        "net_gst_liability": round(net_gst_liability, 2),
         "net_revenue_ex_gst": round(net_rev, 2),
         "margin_scheme_applied": use_margin_scheme,
     }

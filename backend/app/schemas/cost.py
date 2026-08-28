@@ -7,6 +7,7 @@ class CostItemBase(BaseModel):
     category: str = "construction"  # construction, consultants, statutory, contingency, holding, other
     name: str
     calculation_method: str = "fixed_amount"  # fixed_amount, rate_per_sqm, percent_construction
+    gst_applicable: bool = True
     quantity: Optional[Decimal] = None
     rate: Optional[Decimal] = None
     amount: Decimal = Decimal("0.00")
@@ -26,6 +27,7 @@ class CostItemUpdate(BaseModel):
     quantity: Optional[Decimal] = None
     rate: Optional[Decimal] = None
     amount: Optional[Decimal] = None
+    gst_applicable: Optional[bool] = None
     phasing_curve: Optional[str] = None
     start_month: Optional[int] = None
     end_month: Optional[int] = None
@@ -46,6 +48,7 @@ class CostCalculationSummary(BaseModel):
     contingency_subtotal: Decimal
     holding_subtotal: Decimal
     other_subtotal: Decimal
+    total_input_tax_credits: Decimal
     total_development_cost_ex_land: Decimal
     land_acquisition_total: Decimal
     total_project_cost: Decimal

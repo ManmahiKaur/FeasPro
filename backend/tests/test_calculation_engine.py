@@ -33,12 +33,12 @@ def test_gst_margin_scheme():
 
     # Margin scheme GST = (1,100,000 - 550,000) / 11 = 50,000
     res_margin = calculate_gst_margin_scheme(sale_price, land_cost, use_margin_scheme=True)
-    assert res_margin["gst_payable"] == Decimal("50000.00")
+    assert res_margin["gst_payable_on_sales"] == Decimal("50000.00")
     assert res_margin["net_revenue_ex_gst"] == Decimal("1050000.00")
 
     # Standard GST = 1,100,000 / 11 = 100,000
     res_std = calculate_gst_margin_scheme(sale_price, land_cost, use_margin_scheme=False)
-    assert res_std["gst_payable"] == Decimal("100000.00")
+    assert res_std["gst_payable_on_sales"] == Decimal("100000.00")
 
 def test_residual_land_value():
     nrv = Decimal("12000000.00")

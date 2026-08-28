@@ -64,6 +64,8 @@ def calculate_development_costs(
         "holding": Decimal("0.00"),
         "other": Decimal("0.00"),
     }
+    
+    total_input_tax_credits = Decimal("0.00")
 
     item_results = []
     for item in cost_items:
@@ -72,6 +74,7 @@ def calculate_development_costs(
         quantity = Decimal(str(item.get("quantity") or 0))
         rate = Decimal(str(item.get("rate") or 0))
         amount = Decimal(str(item.get("amount") or 0))
+        gst_applicable = item.get("gst_applicable", True)
 
         # If rate per sqm or unit specified, compute amount
         if calc_method == "rate_per_sqm" and quantity > 0 and rate > 0:
@@ -83,6 +86,9 @@ def calculate_development_costs(
             categories[category] += computed_amount
         else:
             categories["other"] += computed_amount
+            
+        if gst_applicable:
+            total_input_tax_credits += (computed_amount * Decimal("0.10"))
 
         item_results.append({
             **item,
@@ -99,6 +105,7 @@ def calculate_development_costs(
         "contingency_subtotal": categories["contingency"],
         "holding_subtotal": categories["holding"],
         "other_subtotal": categories["other"],
+        "total_input_tax_credits": total_input_tax_credits,
         "total_development_cost_ex_land": tdc_ex_land,
         "land_acquisition_total": land_acquisition_total,
         "total_project_cost": total_project_cost,

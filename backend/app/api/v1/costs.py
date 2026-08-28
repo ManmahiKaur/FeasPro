@@ -99,6 +99,7 @@ def get_costs(
         contingency_subtotal=calc["contingency_subtotal"],
         holding_subtotal=calc["holding_subtotal"],
         other_subtotal=calc["other_subtotal"],
+        total_input_tax_credits=calc["total_input_tax_credits"],
         total_development_cost_ex_land=calc["total_development_cost_ex_land"],
         land_acquisition_total=calc["land_acquisition_total"],
         total_project_cost=calc["total_project_cost"],

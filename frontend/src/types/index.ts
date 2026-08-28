@@ -83,6 +83,7 @@ export interface CostItem {
   phasing_curve: 's_curve' | 'linear' | 'upfront' | 'end' | string;
   start_month: number;
   end_month: number;
+  gst_applicable?: boolean;
   notes?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -95,6 +96,7 @@ export interface CostCalculationSummary {
   contingency_subtotal: number | string;
   holding_subtotal: number | string;
   other_subtotal: number | string;
+  total_input_tax_credits: number | string;
   total_development_cost_ex_land: number | string;
   land_acquisition_total: number | string;
   total_project_cost: number | string;

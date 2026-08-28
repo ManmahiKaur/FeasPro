@@ -288,14 +288,16 @@ export const CostsWorkspace: React.FC<CostsWorkspaceProps> = ({
                     <th style={{ width: '24%' }}>Cost Description</th>
                     <th style={{ width: '15%' }}>Phasing Curve</th>
                     <th style={{ width: '14%' }}>Timing (Months)</th>
-                    <th style={{ width: '20%', textAlign: 'right' }}>Total Amount ($)</th>
+                    <th style={{ width: '12%' }}>Amount</th>
+                    <th style={{ width: '8%', textAlign: 'center' }}>GST</th>
+                    <th style={{ width: '11%', textAlign: 'right' }}>Total ($)</th>
                     <th style={{ width: '6%', textAlign: 'center' }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredItems.length === 0 ? (
                     <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
                         No cost items found in this category. Click <strong>"Add Cost Line"</strong> to insert a new line.
                       </td>
                     </tr>
@@ -346,7 +348,7 @@ export const CostsWorkspace: React.FC<CostsWorkspaceProps> = ({
                                 min={1}
                                 max={60}
                                 className="form-control form-control-sm"
-                                style={{ width: '60px', textAlign: 'center' }}
+                                style={{ width: '50px', textAlign: 'center' }}
                                 value={item.start_month}
                                 title="Start Month"
                                 onChange={(e) => handleUpdateItem(realIndex, 'start_month', parseInt(e.target.value) || 1)}
@@ -357,24 +359,31 @@ export const CostsWorkspace: React.FC<CostsWorkspaceProps> = ({
                                 min={item.start_month}
                                 max={60}
                                 className="form-control form-control-sm"
-                                style={{ width: '60px', textAlign: 'center' }}
+                                style={{ width: '50px', textAlign: 'center' }}
                                 value={item.end_month}
                                 title="End Month"
                                 onChange={(e) => handleUpdateItem(realIndex, 'end_month', parseInt(e.target.value) || item.start_month)}
                               />
                             </div>
                           </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <div className="input-with-icon" style={{ position: 'relative' }}>
-                              <input
+                          <td>
+                            <input
                                 type="number"
-                                step="any"
                                 className="form-control form-control-sm"
-                                style={{ textAlign: 'right', fontWeight: 600 }}
                                 value={item.amount}
                                 onChange={(e) => handleUpdateItem(realIndex, 'amount', e.target.value)}
-                              />
-                            </div>
+                            />
+                          </td>
+                          <td className="text-center">
+                            <input
+                              type="checkbox"
+                              checked={item.gst_applicable !== false}
+                              onChange={(e) => handleUpdateItem(realIndex, 'gst_applicable', e.target.checked)}
+                              style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                            />
+                          </td>
+                          <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                            {formatCurrency(parseFloat(String(item.amount)) || 0)}
                           </td>
                           <td style={{ textAlign: 'center' }}>
                             <button
@@ -391,18 +400,18 @@ export const CostsWorkspace: React.FC<CostsWorkspaceProps> = ({
                     })
                   )}
                 </tbody>
-                <tfoot>
-                  <tr style={{ fontWeight: 700, backgroundColor: 'var(--bg-subtle)' }}>
-                    <td colSpan={4} style={{ textAlign: 'right', padding: '14px 16px' }}>
-                      Total Development Cost (Excluding Land):
-                    </td>
-                    <td style={{ textAlign: 'right', padding: '14px 16px', color: 'var(--brand-accent)', fontSize: '1.05rem' }}>
-                      {formatCurrency(clientTdcExLand)}
-                    </td>
-                    <td></td>
-                  </tr>
-                </tfoot>
               </table>
+            </div>
+
+            {/* GST ITC Summary */}
+            <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h4 style={{ margin: 0, color: '#1e293b', fontSize: '1rem', fontWeight: 600 }}>GST Input Tax Credits (ITCs)</h4>
+                <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Total GST claimable on applicable development costs.</p>
+              </div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 700, color: '#047857' }}>
+                {formatCurrency(summary?.total_input_tax_credits || 0)}
+              </div>
             </div>
           </div>
         </div>

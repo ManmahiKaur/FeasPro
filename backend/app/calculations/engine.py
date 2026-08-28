@@ -92,6 +92,7 @@ class FeasibilityCoreEngine:
         gst_res = calculate_gst_margin_scheme(
             gross_sale_price=grv,
             land_purchase_price=land_purchase_price,
+            total_input_tax_credits=cost_res["total_input_tax_credits"],
             use_margin_scheme=use_gst_margin_scheme
         )
 

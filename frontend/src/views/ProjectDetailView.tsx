@@ -10,11 +10,10 @@ import {
   Clock,
   Sparkles,
   ChevronRight,
-  Info,
   Coins,
   Map,
 } from 'lucide-react';
-import { Project, Scenario, DevelopmentType, LandInput } from '../types';
+import { Project, Scenario, DevelopmentType, LandInput, ScenarioMetrics } from '../types';
 import { UpcomingModuleCard } from '../components/UpcomingModuleCard';
 import { CreateScenarioModal } from '../components/CreateScenarioModal';
 import { LandWorkspace } from './LandWorkspace';
@@ -72,24 +71,33 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
   const [isScenarioModalOpen, setIsScenarioModalOpen] = useState(false);
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [activeScenarioLand, setActiveScenarioLand] = useState<LandInput | null>(null);
+  const [activeMetrics, setActiveMetrics] = useState<ScenarioMetrics | null>(null);
 
   const activeScenario =
     project.scenarios.find((s) => s.id === selectedScenarioId) || project.scenarios[0];
 
-  // Fetch land data for the active scenario to power overview preview
-  const fetchActiveScenarioLand = useCallback(async () => {
+  // Fetch land data & metrics for the active scenario to power overview preview
+  const fetchActiveScenarioData = useCallback(async () => {
     if (!activeScenario) return;
     try {
-      const land = await api.getLand(project.id, activeScenario.id);
+      const [land, comparison] = await Promise.all([
+        api.getLand(project.id, activeScenario.id).catch(() => null),
+        api.getScenarioComparison(project.id).catch(() => null),
+      ]);
       setActiveScenarioLand(land);
+      if (comparison) {
+        const match = comparison.scenarios.find((s) => s.scenario_id === activeScenario.id);
+        setActiveMetrics(match || null);
+      }
     } catch {
       setActiveScenarioLand(null);
+      setActiveMetrics(null);
     }
   }, [project.id, activeScenario]);
 
   useEffect(() => {
-    fetchActiveScenarioLand();
-  }, [fetchActiveScenarioLand]);
+    fetchActiveScenarioData();
+  }, [fetchActiveScenarioData]);
 
   const handleScenarioCreated = async (newScenario: Scenario) => {
     const updated = await api.getProject(project.id);
@@ -509,23 +517,27 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                       Total Dev Cost
                     </span>
                     <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 700, color: '#e2e8f0' }}>
-                      Phase 3
+                      {activeMetrics
+                        ? formatCurrency(parseFloat(String(activeMetrics.total_development_cost_ex_land)) || 0)
+                        : '$0'}
                     </p>
                   </div>
                   <div>
                     <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>
                       Dev Margin
                     </span>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 700, color: '#94a3b8' }}>
-                      Phase 3
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 700, color: '#38bdf8' }}>
+                      {activeMetrics
+                        ? `${(parseFloat(String(activeMetrics.margin_on_cost_pct)) || 0).toFixed(1)}%`
+                        : '0.0%'}
                     </p>
                   </div>
                   <div>
                     <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase' }}>
                       Project IRR
                     </span>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 700, color: '#94a3b8' }}>
-                      Phase 3
+                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: '0.95rem', fontWeight: 700, color: '#fbbf24' }}>
+                      {activeMetrics ? `${activeMetrics.project_irr.toFixed(1)}%` : '0.0%'}
                     </p>
                   </div>
                 </div>
@@ -591,13 +603,17 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                     <CheckCircle2 size={16} />
                     <strong>Phase 2: Land & Acquisition Engine</strong>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
-                    <Info size={16} />
-                    <span>Phase 3: Development Costs & Sales Mix</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#047857' }}>
+                    <CheckCircle2 size={16} />
+                    <strong>Phase 3: Development Costs & Sales Mix</strong>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748b' }}>
-                    <Info size={16} />
-                    <span>Phase 4: Funding, Cash Flow & Reports</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#047857' }}>
+                    <CheckCircle2 size={16} />
+                    <strong>Phase 4: Funding, Schedule & Cash Flow</strong>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#047857' }}>
+                    <CheckCircle2 size={16} />
+                    <strong>Phase 5: Scenario Comparison & Stress Testing</strong>
                   </div>
                 </div>
               </div>

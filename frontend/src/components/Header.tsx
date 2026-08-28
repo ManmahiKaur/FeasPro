@@ -27,7 +27,7 @@ export const Header: React.FC<HeaderProps> = ({ currentProject, onNavigateHome }
       <div className="topbar-right">
         <div className="system-status-indicator">
           <span className="status-dot" />
-          <span>Phase 1 Architecture Ready</span>
+          <span>Feasibility Engine Active</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: '#64748b' }}>
           <ShieldCheck size={16} color="#059669" />

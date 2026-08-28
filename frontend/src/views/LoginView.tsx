@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, LogIn, AlertCircle, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle, ShieldCheck, ArrowRight, Eye, EyeOff, Sparkles } from 'lucide-react';
 import { api } from '../services/api';
 import { User } from '../types';
 
@@ -12,34 +12,53 @@ export const LoginView: React.FC<LoginViewProps> = ({
   onLoginSuccess,
   onNavigateToRegister,
 }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('developer@apexdev.com.au');
+  const [password, setPassword] = useState('FeasPro2026!');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || !password.trim()) {
-      setErrorMessage('Please enter both email and password.');
-      return;
-    }
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanEmail = email.trim() || 'developer@apexdev.com.au';
+    const cleanPassword = password.trim() || 'FeasPro2026!';
 
     try {
       setLoading(true);
       setErrorMessage(null);
-      const res = await api.login({ email: email.trim(), password });
+      const res = await api.login({ email: cleanEmail, password: cleanPassword });
       onLoginSuccess(res.user);
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Login failed. Please check your credentials.');
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setErrorMessage(err.message || 'Login failed. Please check your credentials.');
+      } else {
+        setErrorMessage('Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleFillDemo = () => {
+  const handleQuickDemoLogin = async () => {
     setEmail('developer@apexdev.com.au');
     setPassword('FeasPro2026!');
     setErrorMessage(null);
+    try {
+      setLoading(true);
+      const res = await api.login({
+        email: 'developer@apexdev.com.au',
+        password: 'FeasPro2026!',
+      });
+      onLoginSuccess(res.user);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setErrorMessage(err.message || 'Quick login failed.');
+      } else {
+        setErrorMessage('Quick login failed.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -97,11 +116,11 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <label htmlFor="login-password" className="form-label">
                 Password
               </label>
-              <div className="input-with-icon">
+              <div className="input-with-icon" style={{ position: 'relative' }}>
                 <Lock size={18} className="input-field-icon" />
                 <input
                   id="login-password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   className="form-input"
                   placeholder="••••••••••••"
                   value={password}
@@ -110,6 +129,26 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   autoComplete="current-password"
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: '#94a3b8',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '4px',
+                  }}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
             </div>
 
@@ -149,9 +188,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <button
                 type="button"
                 className="demo-fill-btn"
-                onClick={handleFillDemo}
+                onClick={handleQuickDemoLogin}
+                disabled={loading}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
               >
-                <span>Auto-fill</span>
+                <Sparkles size={14} />
+                <span>1-Click Sign In</span>
                 <ArrowRight size={14} />
               </button>
             </div>
@@ -179,4 +221,3 @@ export const LoginView: React.FC<LoginViewProps> = ({
     </div>
   );
 };
-

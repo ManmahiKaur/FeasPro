@@ -8,10 +8,12 @@ import { ProjectDetailView } from './views/ProjectDetailView';
 import { LoginView } from './views/LoginView';
 import { RegisterView } from './views/RegisterView';
 import { CreateProjectModal } from './components/CreateProjectModal';
+import { ScenarioManagerView } from './views/ScenarioManagerView';
 
 export const App: React.FC = () => {
   const [authScreen, setAuthScreen] = useState<'login' | 'register'>('login');
-  const [currentView, setCurrentView] = useState<'dashboard' | 'project-detail'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'project-detail' | 'scenarios'>('dashboard');
+  const [activeProjectTab, setActiveProjectTab] = useState<'overview' | 'scenarios' | undefined>();
   const [projects, setProjects] = useState<ProjectListItem[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -89,6 +91,21 @@ export const App: React.FC = () => {
       setLoading(true);
       const proj = await api.getProject(projectId);
       setSelectedProject(proj);
+      setActiveProjectTab(undefined);
+      setCurrentView('project-detail');
+    } catch (err) {
+      console.error('Failed to load project details:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSelectProjectScenarios = async (projectId: string) => {
+    try {
+      setLoading(true);
+      const proj = await api.getProject(projectId);
+      setSelectedProject(proj);
+      setActiveProjectTab('scenarios');
       setCurrentView('project-detail');
     } catch (err) {
       console.error('Failed to load project details:', err);
@@ -146,9 +163,10 @@ export const App: React.FC = () => {
   return (
     <div className="app-container">
       <Sidebar
-        currentView={currentView === 'dashboard' ? 'dashboard' : 'projects'}
+        currentView={currentView === 'dashboard' ? 'dashboard' : currentView === 'scenarios' ? 'scenarios' : 'projects'}
         onNavigate={(view) => {
           if (view === 'dashboard') handleNavigateHome();
+          else if (view === 'scenarios') setCurrentView('scenarios');
         }}
         currentUser={currentUser}
         onOpenCreateProject={() => setIsCreateModalOpen(true)}
@@ -165,9 +183,15 @@ export const App: React.FC = () => {
             onOpenCreateProject={() => setIsCreateModalOpen(true)}
             onSelectProject={handleSelectProject}
           />
+        ) : currentView === 'scenarios' ? (
+          <ScenarioManagerView
+            projects={projects}
+            onSelectProjectScenarios={handleSelectProjectScenarios}
+          />
         ) : selectedProject ? (
           <ProjectDetailView
             project={selectedProject}
+            initialTab={activeProjectTab}
             onBack={handleNavigateHome}
             onProjectUpdated={handleProjectUpdated}
           />

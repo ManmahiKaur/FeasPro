@@ -7,6 +7,10 @@ from backend.app.models.base import Base, TimestampMixin
 if TYPE_CHECKING:
     from backend.app.models.project import Project
     from backend.app.models.land import LandInput
+    from backend.app.models.cost import CostItem
+    from backend.app.models.sales import SalesProductItem
+    from backend.app.models.funding import FundingAssumption
+    from backend.app.models.schedule import ScheduleMilestone
 
 class Scenario(Base, TimestampMixin):
     __tablename__ = "scenarios"
@@ -25,4 +29,28 @@ class Scenario(Base, TimestampMixin):
         back_populates="scenario",
         uselist=False,
         cascade="all, delete-orphan"
+    )
+    cost_items: Mapped[list["CostItem"]] = relationship(
+        "CostItem",
+        back_populates="scenario",
+        cascade="all, delete-orphan",
+        order_by="CostItem.created_at"
+    )
+    sales_products: Mapped[list["SalesProductItem"]] = relationship(
+        "SalesProductItem",
+        back_populates="scenario",
+        cascade="all, delete-orphan",
+        order_by="SalesProductItem.created_at"
+    )
+    funding_assumption: Mapped[Optional["FundingAssumption"]] = relationship(
+        "FundingAssumption",
+        back_populates="scenario",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
+    schedule_milestones: Mapped[list["ScheduleMilestone"]] = relationship(
+        "ScheduleMilestone",
+        back_populates="scenario",
+        cascade="all, delete-orphan",
+        order_by="ScheduleMilestone.start_month"
     )

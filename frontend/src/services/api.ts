@@ -11,6 +11,15 @@ import {
   LandInput,
   LandInputUpdate,
   AcquisitionCostItem,
+  CostItem,
+  CostSummaryResponse,
+  SalesProductItem,
+  SalesSummaryResponse,
+  CashFlowSummary,
+  FundingAssumption,
+  FundingSummaryResponse,
+  ScheduleMilestone,
+  ScheduleSummaryResponse,
 } from '../types';
 
 const API_BASE = '/api/v1';
@@ -221,6 +230,102 @@ export const api = {
       `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/land/costs/${costId}`,
       {
         method: 'DELETE',
+      }
+    );
+  },
+
+  // Costs
+  async getCosts(projectId: string, scenarioId: string): Promise<CostSummaryResponse> {
+    return fetchJson<CostSummaryResponse>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/costs`
+    );
+  },
+
+  async updateCostsBatch(
+    projectId: string,
+    scenarioId: string,
+    items: CostItem[]
+  ): Promise<CostSummaryResponse> {
+    return fetchJson<CostSummaryResponse>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/costs`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ items }),
+      }
+    );
+  },
+
+  // Sales
+  async getSales(projectId: string, scenarioId: string): Promise<SalesSummaryResponse> {
+    return fetchJson<SalesSummaryResponse>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/sales`
+    );
+  },
+
+  async updateSalesBatch(
+    projectId: string,
+    scenarioId: string,
+    items: SalesProductItem[]
+  ): Promise<SalesSummaryResponse> {
+    return fetchJson<SalesSummaryResponse>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/sales`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ items }),
+      }
+    );
+  },
+
+  // Cash Flow
+  async getCashFlow(
+    projectId: string,
+    scenarioId: string,
+    durationMonths?: number
+  ): Promise<CashFlowSummary> {
+    const url = durationMonths
+      ? `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/cashflow?duration_months=${durationMonths}`
+      : `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/cashflow`;
+    return fetchJson<CashFlowSummary>(url);
+  },
+
+  // Funding
+  async getFunding(projectId: string, scenarioId: string): Promise<FundingSummaryResponse> {
+    return fetchJson<FundingSummaryResponse>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/funding`
+    );
+  },
+
+  async updateFunding(
+    projectId: string,
+    scenarioId: string,
+    data: Partial<FundingAssumption>
+  ): Promise<FundingSummaryResponse> {
+    return fetchJson<FundingSummaryResponse>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/funding`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
+  },
+
+  // Schedule
+  async getSchedule(projectId: string, scenarioId: string): Promise<ScheduleSummaryResponse> {
+    return fetchJson<ScheduleSummaryResponse>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/schedule`
+    );
+  },
+
+  async updateScheduleBatch(
+    projectId: string,
+    scenarioId: string,
+    milestones: ScheduleMilestone[]
+  ): Promise<ScheduleSummaryResponse> {
+    return fetchJson<ScheduleSummaryResponse>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/schedule`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ milestones }),
       }
     );
   },

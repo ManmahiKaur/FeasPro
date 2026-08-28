@@ -18,6 +18,11 @@ import { Project, Scenario, DevelopmentType, LandInput } from '../types';
 import { UpcomingModuleCard } from '../components/UpcomingModuleCard';
 import { CreateScenarioModal } from '../components/CreateScenarioModal';
 import { LandWorkspace } from './LandWorkspace';
+import { CostsWorkspace } from './CostsWorkspace';
+import { SalesWorkspace } from './SalesWorkspace';
+import { CashFlowWorkspace } from './CashFlowWorkspace';
+import { FundingWorkspace } from './FundingWorkspace';
+import { ScheduleWorkspace } from './ScheduleWorkspace';
 import { api } from '../services/api';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 
@@ -25,6 +30,7 @@ interface ProjectDetailViewProps {
   project: Project;
   onBack: () => void;
   onProjectUpdated: (updated: Project) => void;
+  initialTab?: TabType;
 }
 
 type TabType =
@@ -55,8 +61,9 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
   project,
   onBack,
   onProjectUpdated,
+  initialTab,
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'overview');
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>(() => {
     const baseline = project.scenarios.find((s) => s.is_baseline);
     return baseline ? baseline.id : project.scenarios[0]?.id || '';
@@ -224,7 +231,16 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
             onClick={() => setActiveTab('costs')}
           >
             <span>Costs</span>
-            <span className="tab-badge-indicator">Phase 3</span>
+            <span
+              className="tab-badge-indicator"
+              style={{
+                backgroundColor: '#ecfdf5',
+                color: '#047857',
+                fontWeight: 600,
+              }}
+            >
+              Active
+            </span>
           </button>
 
           <button
@@ -232,7 +248,16 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
             onClick={() => setActiveTab('sales')}
           >
             <span>Sales</span>
-            <span className="tab-badge-indicator">Phase 3</span>
+            <span
+              className="tab-badge-indicator"
+              style={{
+                backgroundColor: '#ecfdf5',
+                color: '#047857',
+                fontWeight: 600,
+              }}
+            >
+              Active
+            </span>
           </button>
 
           <button
@@ -240,7 +265,16 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
             onClick={() => setActiveTab('funding')}
           >
             <span>Funding</span>
-            <span className="tab-badge-indicator">Phase 3</span>
+            <span
+              className="tab-badge-indicator"
+              style={{
+                backgroundColor: '#ecfdf5',
+                color: '#047857',
+                fontWeight: 600,
+              }}
+            >
+              Active
+            </span>
           </button>
 
           <button
@@ -248,7 +282,16 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
             onClick={() => setActiveTab('schedule')}
           >
             <span>Schedule</span>
-            <span className="tab-badge-indicator">Phase 3</span>
+            <span
+              className="tab-badge-indicator"
+              style={{
+                backgroundColor: '#ecfdf5',
+                color: '#047857',
+                fontWeight: 600,
+              }}
+            >
+              Active
+            </span>
           </button>
 
           <button
@@ -256,7 +299,16 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
             onClick={() => setActiveTab('cashflow')}
           >
             <span>Cash Flow</span>
-            <span className="tab-badge-indicator">Phase 3</span>
+            <span
+              className="tab-badge-indicator"
+              style={{
+                backgroundColor: '#eff6ff',
+                color: '#2563eb',
+                fontWeight: 600,
+              }}
+            >
+              Live
+            </span>
           </button>
 
           <button
@@ -639,76 +691,37 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
         )}
 
         {activeTab === 'costs' && (
-          <UpcomingModuleCard
-            moduleName="Development Costs"
-            phase="Phase 3"
-            description="Itemize construction costs, professional consultant fees, statutory authority contributions, contingency, and cost escalation."
-            features={[
-              'Categorized cost breakdown (Acquisition, Professional, Construction, Statutory, Contingency)',
-              'Rate-per-m² Gross Floor Area (GFA) and unit rate calculations',
-              'Builder margin and construction contingency buffers',
-              'Inflation and price escalation curves',
-            ]}
-            iconName="costs"
+          <CostsWorkspace
+            projectId={project.id}
+            scenario={activeScenario}
           />
         )}
 
         {activeTab === 'sales' && (
-          <UpcomingModuleCard
-            moduleName="Sales & Gross Realisation Value"
-            phase="Phase 3"
-            description="Configure product unit mix, pricing schedules, sales commissions, marketing allowances, and settlement phasing."
-            features={[
-              'Product unit mix table (1-Bed, 2-Bed, Penthouse, Retail suites)',
-              'Gross Realisation Value (GRV) calculation engine',
-              'GST treatment & Margin Scheme calculations',
-              'Agent commission & marketing budget allocations',
-            ]}
-            iconName="sales"
+          <SalesWorkspace
+            projectId={project.id}
+            scenario={activeScenario}
           />
         )}
 
         {activeTab === 'funding' && (
-          <UpcomingModuleCard
-            moduleName="Capital Stack & Funding"
-            phase="Phase 3"
-            description="Structure senior debt facilities, mezzanine loans, developer equity, interest capitalisation, and line fee schedules."
-            features={[
-              'Senior debt Loan-to-Cost (LTC) and Loan-to-Value (LVR) limits',
-              'Interest rates, line fees, and capitalisation schedules',
-              'Mezzanine & joint-venture equity waterfall distributions',
-              'Debt drawdowns and peak debt exposure tracking',
-            ]}
-            iconName="funding"
+          <FundingWorkspace
+            projectId={project.id}
+            scenario={activeScenario}
           />
         )}
 
         {activeTab === 'schedule' && (
-          <UpcomingModuleCard
-            moduleName="Project Timeline & Phasing"
-            phase="Phase 3"
-            description="Map development phases from DA approval, demolition, construction, presales milestones to final title registration."
-            features={[
-              'Gantt milestone scheduling for planning, construction, and settlement',
-              'Presales hurdle requirements before debt drawdown',
-              'Duration variance sensitivity',
-            ]}
-            iconName="schedule"
+          <ScheduleWorkspace
+            projectId={project.id}
+            scenario={activeScenario}
           />
         )}
 
         {activeTab === 'cashflow' && (
-          <UpcomingModuleCard
-            moduleName="Monthly Cash Flow & S-Curve"
-            phase="Phase 3"
-            description="Calculate monthly deterministic cash flow phasing, construction S-curves, cumulative net cash flow, and monthly finance costs."
-            features={[
-              'Deterministic monthly/quarterly cash flow projections',
-              'Standard Bell / S-curve distribution algorithms for construction',
-              'Monthly capital drawdowns and interest compounding',
-              'Project IRR & Equity IRR calculated on cash flow dates',
-            ]}
-            iconName="cashflow"
+          <CashFlowWorkspace
+            projectId={project.id}
+            scenario={activeScenario}
           />
         )}
 

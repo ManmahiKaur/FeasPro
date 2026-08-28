@@ -1,10 +1,10 @@
 """
 Development Costs & Land Valuation Calculation Engine.
-Provides deterministic calculations for Land Acquisition, Cost subtotals, and balance schedules.
+Provides deterministic calculations for Land Acquisition, Construction, Consultant, and Development Costs.
 """
 
 from decimal import Decimal
-from typing import Dict, Any, Iterable, Optional
+from typing import Dict, Any, Iterable, Optional, List
 
 def calculate_land_acquisition_totals(
     purchase_price: Decimal,
@@ -41,6 +41,66 @@ def calculate_land_acquisition_totals(
         "remaining_purchase_amount": remaining_purchase,
     }
 
-def calculate_development_costs(*args, **kwargs) -> Dict[str, Any]:
-    """Placeholder for Phase 3/4 full construction and consultant cost calculations."""
-    raise NotImplementedError("Full construction cost engine will be implemented in future phases.")
+def calculate_development_costs(
+    cost_items: List[Dict[str, Any]],
+    land_acquisition_total: Decimal = Decimal("0.00")
+) -> Dict[str, Any]:
+    """
+    Calculate development cost subtotals by category and overall project totals.
+    
+    Categories:
+    - construction
+    - consultants
+    - statutory
+    - contingency
+    - holding
+    - other
+    """
+    categories: Dict[str, Decimal] = {
+        "construction": Decimal("0.00"),
+        "consultants": Decimal("0.00"),
+        "statutory": Decimal("0.00"),
+        "contingency": Decimal("0.00"),
+        "holding": Decimal("0.00"),
+        "other": Decimal("0.00"),
+    }
+
+    item_results = []
+    for item in cost_items:
+        category = item.get("category", "other")
+        calc_method = item.get("calculation_method", "fixed_amount")
+        quantity = Decimal(str(item.get("quantity") or 0))
+        rate = Decimal(str(item.get("rate") or 0))
+        amount = Decimal(str(item.get("amount") or 0))
+
+        # If rate per sqm or unit specified, compute amount
+        if calc_method == "rate_per_sqm" and quantity > 0 and rate > 0:
+            computed_amount = quantity * rate
+        else:
+            computed_amount = amount
+
+        if category in categories:
+            categories[category] += computed_amount
+        else:
+            categories["other"] += computed_amount
+
+        item_results.append({
+            **item,
+            "amount": float(computed_amount)
+        })
+
+    tdc_ex_land = sum(categories.values())
+    total_project_cost = land_acquisition_total + tdc_ex_land
+
+    return {
+        "construction_subtotal": categories["construction"],
+        "consultants_subtotal": categories["consultants"],
+        "statutory_subtotal": categories["statutory"],
+        "contingency_subtotal": categories["contingency"],
+        "holding_subtotal": categories["holding"],
+        "other_subtotal": categories["other"],
+        "total_development_cost_ex_land": tdc_ex_land,
+        "land_acquisition_total": land_acquisition_total,
+        "total_project_cost": total_project_cost,
+        "items": item_results
+    }

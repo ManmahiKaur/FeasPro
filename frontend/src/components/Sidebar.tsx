@@ -59,7 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <button
           className={`nav-item ${currentView === 'scenarios' ? 'active' : ''}`}
-          onClick={() => onNavigate('dashboard')}
+          onClick={() => onNavigate('scenarios')}
         >
           <Layers size={18} />
           <span>Scenario Manager</span>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, LogIn, AlertCircle, ShieldCheck, ArrowRight, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import { api } from '../services/api';
 import { User } from '../types';
 
@@ -12,49 +12,29 @@ export const LoginView: React.FC<LoginViewProps> = ({
   onLoginSuccess,
   onNavigateToRegister,
 }) => {
-  const [email, setEmail] = useState('developer@apexdev.com.au');
-  const [password, setPassword] = useState('FeasPro2026!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const cleanEmail = email.trim() || 'developer@apexdev.com.au';
-    const cleanPassword = password.trim() || 'FeasPro2026!';
+    if (!email.trim() || !password.trim()) {
+      setErrorMessage('Please enter both email and password.');
+      return;
+    }
 
     try {
       setLoading(true);
       setErrorMessage(null);
-      const res = await api.login({ email: cleanEmail, password: cleanPassword });
+      const res = await api.login({ email: email.trim(), password });
       onLoginSuccess(res.user);
     } catch (err: unknown) {
       if (err instanceof Error) {
         setErrorMessage(err.message || 'Login failed. Please check your credentials.');
       } else {
         setErrorMessage('Login failed. Please check your credentials.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickDemoLogin = async () => {
-    setEmail('developer@apexdev.com.au');
-    setPassword('FeasPro2026!');
-    setErrorMessage(null);
-    try {
-      setLoading(true);
-      const res = await api.login({
-        email: 'developer@apexdev.com.au',
-        password: 'FeasPro2026!',
-      });
-      onLoginSuccess(res.user);
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setErrorMessage(err.message || 'Quick login failed.');
-      } else {
-        setErrorMessage('Quick login failed.');
       }
     } finally {
       setLoading(false);
@@ -169,7 +149,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           </form>
 
           {onNavigateToRegister && (
-            <div className="auth-switch-prompt" style={{ textAlign: 'center', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid #f1f5f9', fontSize: '0.86rem', color: '#64748b' }}>
+            <div className="auth-switch-prompt" style={{ textAlign: 'center', marginTop: '16px', fontSize: '0.86rem', color: '#64748b' }}>
               <span>Don't have an account? </span>
               <button
                 type="button"
@@ -181,37 +161,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
               </button>
             </div>
           )}
-
-          <div className="demo-credentials-card">
-            <div className="demo-credentials-header">
-              <span className="demo-badge">Demo Account (Dev Mode)</span>
-              <button
-                type="button"
-                className="demo-fill-btn"
-                onClick={handleQuickDemoLogin}
-                disabled={loading}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-              >
-                <Sparkles size={14} />
-                <span>1-Click Sign In</span>
-                <ArrowRight size={14} />
-              </button>
-            </div>
-            <div className="demo-credentials-body">
-              <div className="demo-row">
-                <span className="demo-label">Email:</span>
-                <code className="demo-val">developer@apexdev.com.au</code>
-              </div>
-              <div className="demo-row">
-                <span className="demo-label">Password:</span>
-                <code className="demo-val">FeasPro2026!</code>
-              </div>
-              <div className="demo-row">
-                <span className="demo-label">Tenant Org:</span>
-                <span className="demo-val-text">Apex Property Group</span>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="login-page-footer">

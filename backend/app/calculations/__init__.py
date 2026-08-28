@@ -1,15 +1,56 @@
 """
-FeasPro Financial Calculation Engine.
+FeasPro Core Financial Calculation Engine (Phase 1 Foundation).
 
-Architecture Rule:
-All financial calculations, residual land value calculations, funding models, cash flow scheduling,
-and feasibility metric evaluations MUST remain purely deterministic in this calculation layer.
-Do NOT put financial calculation formulas directly inside API routes, React components, or Database models.
-
-Modules in this layer:
-- revenue.py: Gross Realisation Value (GRV), net revenue, sales phasing (Phase 2+)
-- costs.py: Acquisition, statutory fees, professional fees, construction, contingency, escalation (Phase 2+)
-- funding.py: Senior debt, mezzanine, equity waterfall, capitalized interest (Phase 3+)
-- cashflow.py: Monthly/quarterly cashflow projections, S-curves, peak debt (Phase 3+)
-- feasibility.py: Feasibility summary, Development Margin, Return on Cost (RoC), IRR, NPV (Phase 2-3)
+All financial calculations, residual land valuation models, taxation, cash flow phasing,
+and return metrics are strictly deterministic in this calculation layer.
 """
+
+from backend.app.calculations.taxation import (
+    calculate_stamp_duty,
+    calculate_gst_margin_scheme,
+    STATE_STAMP_DUTY_RATES,
+)
+from backend.app.calculations.costs import (
+    calculate_land_acquisition_totals,
+    calculate_development_costs,
+)
+from backend.app.calculations.revenue import (
+    calculate_gross_revenue,
+)
+from backend.app.calculations.funding import (
+    calculate_funding_capital_stack,
+)
+from backend.app.calculations.cashflow import (
+    calculate_s_curve_weights,
+    calculate_irr_from_cashflows,
+    generate_cash_flow_schedule,
+)
+from backend.app.calculations.valuation import (
+    calculate_residual_land_value,
+)
+from backend.app.calculations.feasibility import (
+    evaluate_feasibility_metrics,
+    calculate_npv_from_cashflows,
+    calculate_wacc,
+)
+from backend.app.calculations.engine import (
+    FeasibilityCoreEngine,
+)
+
+__all__ = [
+    "calculate_stamp_duty",
+    "calculate_gst_margin_scheme",
+    "STATE_STAMP_DUTY_RATES",
+    "calculate_land_acquisition_totals",
+    "calculate_development_costs",
+    "calculate_gross_revenue",
+    "calculate_funding_capital_stack",
+    "calculate_s_curve_weights",
+    "calculate_irr_from_cashflows",
+    "generate_cash_flow_schedule",
+    "calculate_residual_land_value",
+    "evaluate_feasibility_metrics",
+    "calculate_npv_from_cashflows",
+    "calculate_wacc",
+    "FeasibilityCoreEngine",
+]

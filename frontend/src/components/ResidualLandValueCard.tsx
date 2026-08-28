@@ -11,11 +11,13 @@ import { formatCurrency } from '../utils/formatters';
 interface ResidualLandValueCardProps {
   projectId: string;
   scenario: Scenario;
+  refreshTrigger?: number;
 }
 
 export const ResidualLandValueCard: React.FC<ResidualLandValueCardProps> = ({
   projectId,
   scenario,
+  refreshTrigger = 0,
 }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [data, setData] = useState<FullFeasibilityResponse | null>(null);
@@ -36,7 +38,7 @@ export const ResidualLandValueCard: React.FC<ResidualLandValueCardProps> = ({
     } finally {
       setLoading(false);
     }
-  }, [projectId, scenario.id]);
+  }, [projectId, scenario.id, refreshTrigger]);
 
   useEffect(() => {
     loadFeasibility();

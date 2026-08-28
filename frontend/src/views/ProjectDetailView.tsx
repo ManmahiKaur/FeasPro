@@ -73,6 +73,9 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
   const [archiveLoading, setArchiveLoading] = useState(false);
   const [activeScenarioLand, setActiveScenarioLand] = useState<LandInput | null>(null);
   const [activeMetrics, setActiveMetrics] = useState<ScenarioMetrics | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const triggerRefresh = useCallback(() => setRefreshTrigger(t => t + 1), []);
 
   const activeScenario =
     project.scenarios.find((s) => s.id === selectedScenarioId) || project.scenarios[0];
@@ -94,7 +97,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
       setActiveScenarioLand(null);
       setActiveMetrics(null);
     }
-  }, [project.id, activeScenario]);
+  }, [project.id, activeScenario, refreshTrigger]);
 
   useEffect(() => {
     fetchActiveScenarioData();
@@ -624,6 +627,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
             <ResidualLandValueCard
               projectId={project.id}
               scenario={activeScenario}
+              refreshTrigger={refreshTrigger}
             />
           </div>
         )}
@@ -633,7 +637,10 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
           <LandWorkspace
             projectId={project.id}
             scenario={activeScenario}
-            onLandUpdated={(updated) => setActiveScenarioLand(updated)}
+            onLandUpdated={(updated) => {
+              setActiveScenarioLand(updated);
+              triggerRefresh();
+            }}
           />
         )}
 
@@ -675,6 +682,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
           <CostsWorkspace
             projectId={project.id}
             scenario={activeScenario}
+            onCostsUpdated={triggerRefresh}
           />
         )}
 
@@ -682,6 +690,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
           <SalesWorkspace
             projectId={project.id}
             scenario={activeScenario}
+            onSalesUpdated={triggerRefresh}
           />
         )}
 
@@ -689,6 +698,7 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
           <FundingWorkspace
             projectId={project.id}
             scenario={activeScenario}
+            onFundingUpdated={triggerRefresh}
           />
         )}
 

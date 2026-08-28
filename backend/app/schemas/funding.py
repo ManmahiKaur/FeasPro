@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 from decimal import Decimal
 import datetime
 # pyrefly: ignore [missing-import]
@@ -50,3 +50,71 @@ class FundingCalculationSummary(BaseModel):
 class FundingSummaryResponse(BaseModel):
     assumption: FundingAssumptionRead
     summary: FundingCalculationSummary
+
+
+# ─── Phase 2: Multi-Tranche & Waterfall Schemas ──────────────────────────────
+
+class FundingTrancheBase(BaseModel):
+    tranche_type: str = "ordinary_equity"  # senior_debt | mezzanine | preferred_equity | ordinary_equity
+    name: str
+    priority_order: int = 1
+    amount: Decimal = Decimal("0.00")
+    hurdle_rate_pct: Decimal = Decimal("0.00")
+    investor_split_pct: Decimal = Decimal("80.00")
+    developer_promote_pct: Decimal = Decimal("20.00")
+
+class FundingTrancheCreate(FundingTrancheBase):
+    pass
+
+class FundingTrancheUpdate(FundingTrancheBase):
+    pass
+
+class FundingTrancheRead(FundingTrancheBase):
+    id: str
+    scenario_id: str
+    created_at: datetime.datetime
+    updated_at: datetime.datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+class WaterfallTier1Item(BaseModel):
+    tranche_id: str
+    tranche_name: str
+    tranche_type: str
+    priority_order: int
+    capital_returned: Decimal
+
+class WaterfallTier2Item(BaseModel):
+    tranche_id: str
+    tranche_name: str
+    tranche_type: str
+    priority_order: int
+    preferred_return_target: Decimal
+    preferred_return_paid: Decimal
+    shortfall: Decimal
+
+class WaterfallTier3Item(BaseModel):
+    tranche_id: str
+    tranche_name: str
+    tranche_type: str
+    priority_order: int
+    investor_split_pct: float
+    developer_promote_pct: float
+    investor_distribution: Decimal
+    developer_promote_distribution: Decimal
+    total_distribution: Decimal
+
+class WaterfallResult(BaseModel):
+    available_proceeds: Decimal
+    total_distributed: Decimal
+    remaining_proceeds: Decimal
+    reconciliation_difference: Decimal
+    tier1_return_of_capital: List[WaterfallTier1Item]
+    tier2_preferred_return: List[WaterfallTier2Item]
+    tier3_residual_split: List[WaterfallTier3Item]
+
+class WaterfallResponse(BaseModel):
+    tranches: List[FundingTrancheRead]
+    waterfall: WaterfallResult
+    net_profit_after_finance: Decimal
+

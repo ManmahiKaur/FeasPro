@@ -1,7 +1,7 @@
 import uuid
 from decimal import Decimal
-from typing import Optional, TYPE_CHECKING
-from sqlalchemy import String, Numeric, Boolean, ForeignKey
+from typing import Optional, List, TYPE_CHECKING
+from sqlalchemy import String, Numeric, Boolean, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from backend.app.models.base import Base, TimestampMixin
 
@@ -38,3 +38,34 @@ class FundingAssumption(Base, TimestampMixin):
 
     # Relationships
     scenario: Mapped["Scenario"] = relationship("Scenario", back_populates="funding_assumption")
+
+
+class FundingTranche(Base, TimestampMixin):
+    """
+    Multi-tranche funding model supporting unlimited tranches per scenario.
+    Supports senior_debt, mezzanine, preferred_equity, ordinary_equity.
+    """
+    __tablename__ = "funding_tranches"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    scenario_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("scenarios.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    tranche_type: Mapped[str] = mapped_column(String(50), default="ordinary_equity", nullable=False)
+    # senior_debt | mezzanine | preferred_equity | ordinary_equity
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    priority_order: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+
+    # Amount invested in this tranche
+    amount: Mapped[Decimal] = mapped_column(Numeric(15, 2), default=Decimal("0.00"), nullable=False)
+
+    # Rate or hurdle for preferred equity
+    hurdle_rate_pct: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=Decimal("0.00"), nullable=False)
+
+    # For residual profit split tranches (ordinary_equity)
+    investor_split_pct: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=Decimal("80.00"), nullable=False)
+    developer_promote_pct: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=Decimal("20.00"), nullable=False)

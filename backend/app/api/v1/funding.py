@@ -6,7 +6,7 @@ from backend.app.core.security import get_current_user
 from backend.app.models.user import User
 from backend.app.models.project import Project
 from backend.app.models.scenario import Scenario
-from backend.app.models.funding import FundingAssumption
+from backend.app.models.funding import FundingAssumption, FundingTranche
 from backend.app.models.land import LandInput
 from backend.app.models.cost import CostItem
 from backend.app.models.sales import SalesProductItem
@@ -15,8 +15,12 @@ from backend.app.schemas.funding import (
     FundingAssumptionRead,
     FundingCalculationSummary,
     FundingSummaryResponse,
+    FundingTrancheCreate,
+    FundingTrancheUpdate,
+    FundingTrancheRead,
+    WaterfallResponse,
 )
-from backend.app.calculations.funding import calculate_funding_capital_stack
+from backend.app.calculations.funding import calculate_funding_capital_stack, calculate_distribution_waterfall
 from backend.app.calculations.costs import calculate_development_costs, calculate_land_acquisition_totals
 from backend.app.calculations.revenue import calculate_gross_revenue
 from backend.app.api.v1.costs import DEFAULT_COST_TEMPLATES
@@ -172,3 +176,164 @@ def update_funding(
     db.refresh(assumption)
 
     return get_funding(project_id, scenario_id, db, current_user)
+
+
+# ─── Phase 2: Tranche Management Endpoints ───────────────────────────────────
+
+@router.get(
+    "/projects/{project_id}/scenarios/{scenario_id}/funding/tranches",
+    response_model=list[FundingTrancheRead],
+    summary="List all funding tranches for a scenario"
+)
+def list_tranches(
+    project_id: str,
+    scenario_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    verify_scenario_access(project_id, scenario_id, db, current_user)
+    tranches = db.query(FundingTranche).filter(
+        FundingTranche.scenario_id == scenario_id
+    ).order_by(FundingTranche.priority_order).all()
+    return tranches
+
+
+@router.post(
+    "/projects/{project_id}/scenarios/{scenario_id}/funding/tranches",
+    response_model=FundingTrancheRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a new funding tranche"
+)
+def create_tranche(
+    project_id: str,
+    scenario_id: str,
+    payload: FundingTrancheCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    verify_scenario_access(project_id, scenario_id, db, current_user)
+    tranche = FundingTranche(scenario_id=scenario_id, **payload.model_dump())
+    db.add(tranche)
+    db.commit()
+    db.refresh(tranche)
+    return tranche
+
+
+@router.put(
+    "/projects/{project_id}/scenarios/{scenario_id}/funding/tranches/{tranche_id}",
+    response_model=FundingTrancheRead,
+    summary="Update a funding tranche"
+)
+def update_tranche(
+    project_id: str,
+    scenario_id: str,
+    tranche_id: str,
+    payload: FundingTrancheUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    verify_scenario_access(project_id, scenario_id, db, current_user)
+    tranche = db.query(FundingTranche).filter(
+        FundingTranche.id == tranche_id,
+        FundingTranche.scenario_id == scenario_id
+    ).first()
+    if not tranche:
+        raise HTTPException(status_code=404, detail="Tranche not found")
+
+    for field, value in payload.model_dump().items():
+        setattr(tranche, field, value)
+    db.commit()
+    db.refresh(tranche)
+    return tranche
+
+
+@router.delete(
+    "/projects/{project_id}/scenarios/{scenario_id}/funding/tranches/{tranche_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a funding tranche"
+)
+def delete_tranche(
+    project_id: str,
+    scenario_id: str,
+    tranche_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    verify_scenario_access(project_id, scenario_id, db, current_user)
+    tranche = db.query(FundingTranche).filter(
+        FundingTranche.id == tranche_id,
+        FundingTranche.scenario_id == scenario_id
+    ).first()
+    if not tranche:
+        raise HTTPException(status_code=404, detail="Tranche not found")
+    db.delete(tranche)
+    db.commit()
+
+
+# ─── Phase 2: Waterfall Endpoint ─────────────────────────────────────────────
+
+@router.get(
+    "/projects/{project_id}/scenarios/{scenario_id}/funding/waterfall",
+    response_model=WaterfallResponse,
+    summary="Get the funding distribution waterfall for a scenario"
+)
+def get_waterfall(
+    project_id: str,
+    scenario_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    verify_scenario_access(project_id, scenario_id, db, current_user)
+
+    # Get net profit after finance from the existing capital stack calculation
+    assumption = db.query(FundingAssumption).filter(FundingAssumption.scenario_id == scenario_id).first()
+    total_cost, grv, net_profit = get_scenario_cost_and_revenue(scenario_id, db)
+
+    if assumption:
+        stack = calculate_funding_capital_stack(
+            total_project_cost=total_cost,
+            gross_realisation_value=grv,
+            senior_debt_enabled=assumption.senior_debt_enabled,
+            senior_max_ltc_pct=assumption.senior_max_ltc_pct,
+            senior_max_lvr_pct=assumption.senior_max_lvr_pct,
+            senior_interest_rate_pct=assumption.senior_interest_rate_pct,
+            senior_line_fee_pct=assumption.senior_line_fee_pct,
+            senior_establishment_fee_pct=assumption.senior_establishment_fee_pct,
+            mezzanine_enabled=assumption.mezzanine_enabled,
+            mezzanine_amount=assumption.mezzanine_amount,
+            mezzanine_interest_rate_pct=assumption.mezzanine_interest_rate_pct,
+            net_profit_before_finance=net_profit,
+        )
+        net_profit_after_finance = stack["net_profit_after_finance"]
+    else:
+        net_profit_after_finance = net_profit
+
+    # Load tranches
+    tranches = db.query(FundingTranche).filter(
+        FundingTranche.scenario_id == scenario_id
+    ).order_by(FundingTranche.priority_order).all()
+
+    tranche_dicts = [
+        {
+            "id": t.id,
+            "tranche_type": t.tranche_type,
+            "name": t.name,
+            "priority_order": t.priority_order,
+            "amount": t.amount,
+            "hurdle_rate_pct": t.hurdle_rate_pct,
+            "investor_split_pct": t.investor_split_pct,
+            "developer_promote_pct": t.developer_promote_pct,
+        }
+        for t in tranches
+    ]
+
+    waterfall = calculate_distribution_waterfall(
+        available_net_proceeds=net_profit_after_finance,
+        tranches=tranche_dicts,
+    )
+
+    return WaterfallResponse(
+        tranches=tranches,
+        waterfall=waterfall,
+        net_profit_after_finance=net_profit_after_finance,
+    )

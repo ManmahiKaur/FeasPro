@@ -18,6 +18,8 @@ import {
   CashFlowSummary,
   FundingAssumption,
   FundingSummaryResponse,
+  FundingTranche,
+  WaterfallResponse,
   ScheduleMilestone,
   ScheduleSummaryResponse,
   ScenarioComparisonResponse,
@@ -334,6 +336,40 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(data),
       }
+    );
+  },
+
+  // Funding Tranches (Phase 2)
+  async listTranches(projectId: string, scenarioId: string): Promise<FundingTranche[]> {
+    return fetchJson<FundingTranche[]>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/funding/tranches`
+    );
+  },
+
+  async createTranche(projectId: string, scenarioId: string, data: Omit<FundingTranche, 'id' | 'scenario_id' | 'created_at' | 'updated_at'>): Promise<FundingTranche> {
+    return fetchJson<FundingTranche>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/funding/tranches`,
+      { method: 'POST', body: JSON.stringify(data) }
+    );
+  },
+
+  async updateTranche(projectId: string, scenarioId: string, trancheId: string, data: Omit<FundingTranche, 'id' | 'scenario_id' | 'created_at' | 'updated_at'>): Promise<FundingTranche> {
+    return fetchJson<FundingTranche>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/funding/tranches/${trancheId}`,
+      { method: 'PUT', body: JSON.stringify(data) }
+    );
+  },
+
+  async deleteTranche(projectId: string, scenarioId: string, trancheId: string): Promise<void> {
+    await fetchJson<void>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/funding/tranches/${trancheId}`,
+      { method: 'DELETE' }
+    );
+  },
+
+  async getWaterfall(projectId: string, scenarioId: string): Promise<WaterfallResponse> {
+    return fetchJson<WaterfallResponse>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/funding/waterfall`
     );
   },
 

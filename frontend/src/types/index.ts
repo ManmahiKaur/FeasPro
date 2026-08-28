@@ -418,3 +418,67 @@ export interface RegisterInput {
   password: string;
   confirm_password?: string;
 }
+
+// ─── Phase 2: Funding Tranche & Waterfall Types ──────────────────────────────
+
+export type TrancheType = 'senior_debt' | 'mezzanine' | 'preferred_equity' | 'ordinary_equity';
+
+export interface FundingTranche {
+  id?: string;
+  scenario_id?: string;
+  tranche_type: TrancheType;
+  name: string;
+  priority_order: number;
+  amount: number | string;
+  hurdle_rate_pct: number | string;
+  investor_split_pct: number | string;
+  developer_promote_pct: number | string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface WaterfallTier1Item {
+  tranche_id: string;
+  tranche_name: string;
+  tranche_type: string;
+  priority_order: number;
+  capital_returned: number | string;
+}
+
+export interface WaterfallTier2Item {
+  tranche_id: string;
+  tranche_name: string;
+  tranche_type: string;
+  priority_order: number;
+  preferred_return_target: number | string;
+  preferred_return_paid: number | string;
+  shortfall: number | string;
+}
+
+export interface WaterfallTier3Item {
+  tranche_id: string;
+  tranche_name: string;
+  tranche_type: string;
+  priority_order: number;
+  investor_split_pct: number;
+  developer_promote_pct: number;
+  investor_distribution: number | string;
+  developer_promote_distribution: number | string;
+  total_distribution: number | string;
+}
+
+export interface WaterfallResult {
+  available_proceeds: number | string;
+  total_distributed: number | string;
+  remaining_proceeds: number | string;
+  reconciliation_difference: number | string;
+  tier1_return_of_capital: WaterfallTier1Item[];
+  tier2_preferred_return: WaterfallTier2Item[];
+  tier3_residual_split: WaterfallTier3Item[];
+}
+
+export interface WaterfallResponse {
+  tranches: FundingTranche[];
+  waterfall: WaterfallResult;
+  net_profit_after_finance: number | string;
+}

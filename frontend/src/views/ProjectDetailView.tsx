@@ -23,6 +23,7 @@ import { CashFlowWorkspace } from './CashFlowWorkspace';
 import { FundingWorkspace } from './FundingWorkspace';
 import { ScheduleWorkspace } from './ScheduleWorkspace';
 import { ScenarioComparisonMatrix } from '../components/ScenarioComparisonMatrix';
+import { ResidualLandValueCard } from '../components/ResidualLandValueCard';
 import { api } from '../services/api';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 
@@ -618,6 +619,12 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Phase 1 Master Valuation & RLV Engine */}
+            <ResidualLandValueCard
+              projectId={project.id}
+              scenario={activeScenario}
+            />
           </div>
         )}
 

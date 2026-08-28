@@ -277,6 +277,60 @@ export interface ScenarioComparisonResponse {
   scenarios: ScenarioMetrics[];
 }
 
+export interface StampDutyResponse {
+  base_stamp_duty: number | string;
+  foreign_surcharge: number | string;
+  total_stamp_duty: number | string;
+  effective_rate_pct: number | string;
+}
+
+export interface GstMarginSchemeResponse {
+  gst_payable: number | string;
+  net_revenue_ex_gst: number | string;
+  margin_scheme_applied: boolean;
+}
+
+export interface MarginSensitivityItem {
+  target_margin_pct: number;
+  max_land_purchase_price: number | string;
+  max_total_land_acquisition: number | string;
+}
+
+export interface ResidualLandValueResponse {
+  residual_land_value_cost_target: number | string;
+  max_land_acquisition_cost_target: number | string;
+  target_margin_on_cost_pct: number | string;
+  residual_land_value_grv_target: number | string;
+  max_land_acquisition_grv_target: number | string;
+  target_margin_on_grv_pct: number | string;
+  margin_sensitivity: MarginSensitivityItem[];
+}
+
+export interface FullFeasibilityResponse {
+  project_id: string;
+  scenario_id: string;
+  scenario_name: string;
+  stamp_duty: StampDutyResponse;
+  gst: GstMarginSchemeResponse;
+  valuation_rlv: ResidualLandValueResponse;
+  wacc_pct: number | string;
+  metrics: {
+    gross_realisation_value: number | string;
+    net_realisation_value: number | string;
+    total_project_cost: number | string;
+    total_development_cost_ex_land: number | string;
+    land_acquisition_total: number | string;
+    net_profit: number | string;
+    margin_on_cost_pct: number | string;
+    margin_on_grv_pct: number | string;
+    net_profit_after_finance: number | string;
+    return_on_equity_pct: number | string;
+    project_irr_pct: number;
+    net_present_value: number;
+    discount_rate_pct: number;
+  };
+}
+
 export interface Project {
   id: string;
   organization_id: string;

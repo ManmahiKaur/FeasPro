@@ -21,6 +21,7 @@ import {
   ScheduleMilestone,
   ScheduleSummaryResponse,
   ScenarioComparisonResponse,
+  FullFeasibilityResponse,
 } from '../types';
 
 const API_BASE = '/api/v1';
@@ -355,6 +356,20 @@ export const api = {
         body: JSON.stringify({ milestones }),
       }
     );
+  },
+
+  // Feasibility & Valuation (Phase 1 Master Engine)
+  async getFullFeasibility(projectId: string, scenarioId: string): Promise<FullFeasibilityResponse> {
+    return fetchJson<FullFeasibilityResponse>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/feasibility`
+    );
+  },
+
+  async evaluateStandaloneFeasibility(payload: Record<string, unknown>): Promise<Record<string, unknown>> {
+    return fetchJson<Record<string, unknown>>(`${API_BASE}/feasibility/evaluate`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 
   // Auth / User

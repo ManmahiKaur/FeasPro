@@ -8,6 +8,7 @@ from backend.app.api.v1.sales import router as sales_router
 from backend.app.api.v1.cashflow import router as cashflow_router
 from backend.app.api.v1.funding import router as funding_router
 from backend.app.api.v1.schedule import router as schedule_router
+from backend.app.api.v1.feasibility import router as feasibility_router
 
 api_router = APIRouter()
 
@@ -20,3 +21,4 @@ api_router.include_router(sales_router)
 api_router.include_router(cashflow_router)
 api_router.include_router(funding_router)
 api_router.include_router(schedule_router)
+api_router.include_router(feasibility_router)

@@ -247,6 +247,36 @@ export interface Scenario {
   updated_at: string;
 }
 
+export interface ScenarioMetrics {
+  scenario_id: string;
+  name: string;
+  is_baseline: boolean;
+  status: string;
+  total_units: number;
+  total_internal_area: number | string;
+  gross_realisation_value: number | string;
+  net_realisation_value: number | string;
+  land_acquisition_total: number | string;
+  construction_subtotal: number | string;
+  total_development_cost_ex_land: number | string;
+  total_project_cost: number | string;
+  net_profit: number | string;
+  margin_on_cost_pct: number | string;
+  margin_on_grv_pct: number | string;
+  project_irr: number;
+  peak_debt: number;
+  required_developer_equity: number | string;
+  return_on_equity_pct: number | string;
+  duration_months: number;
+}
+
+export interface ScenarioComparisonResponse {
+  project_id: string;
+  project_name: string;
+  baseline_scenario_id: string | null;
+  scenarios: ScenarioMetrics[];
+}
+
 export interface Project {
   id: string;
   organization_id: string;

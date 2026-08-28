@@ -20,6 +20,7 @@ import {
   FundingSummaryResponse,
   ScheduleMilestone,
   ScheduleSummaryResponse,
+  ScenarioComparisonResponse,
 } from '../types';
 
 const API_BASE = '/api/v1';
@@ -171,6 +172,32 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+  },
+
+  async cloneScenario(
+    projectId: string,
+    scenarioId: string,
+    data?: { name?: string; description?: string }
+  ): Promise<Scenario> {
+    return fetchJson<Scenario>(
+      `${API_BASE}/projects/${projectId}/scenarios/${scenarioId}/clone`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data || {}),
+      }
+    );
+  },
+
+  async deleteScenario(scenarioId: string): Promise<void> {
+    return fetchJson<void>(`${API_BASE}/scenarios/${scenarioId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async getScenarioComparison(projectId: string): Promise<ScenarioComparisonResponse> {
+    return fetchJson<ScenarioComparisonResponse>(
+      `${API_BASE}/projects/${projectId}/scenarios/comparison`
+    );
   },
 
   // Land & Acquisition

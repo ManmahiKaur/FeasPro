@@ -23,6 +23,7 @@ import { SalesWorkspace } from './SalesWorkspace';
 import { CashFlowWorkspace } from './CashFlowWorkspace';
 import { FundingWorkspace } from './FundingWorkspace';
 import { ScheduleWorkspace } from './ScheduleWorkspace';
+import { ScenarioComparisonMatrix } from '../components/ScenarioComparisonMatrix';
 import { api } from '../services/api';
 import { formatCurrency, formatNumber } from '../utils/formatters';
 
@@ -94,16 +95,6 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
     const updated = await api.getProject(project.id);
     onProjectUpdated(updated);
     setSelectedScenarioId(newScenario.id);
-  };
-
-  const handleSetBaseline = async (scenarioId: string) => {
-    try {
-      await api.updateScenario(scenarioId, { is_baseline: true });
-      const updated = await api.getProject(project.id);
-      onProjectUpdated(updated);
-    } catch (err) {
-      console.error('Failed to set baseline scenario:', err);
-    }
   };
 
   const handleArchiveProject = async () => {
@@ -625,10 +616,10 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
 
         {activeTab === 'scenarios' && (
           <div>
-            <div className="page-header">
+            <div className="page-header" style={{ marginBottom: '20px' }}>
               <div>
                 <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                  Feasibility Scenarios
+                  Feasibility Scenarios & Schemes
                 </h2>
                 <p className="page-subtitle">
                   Create and manage scenario branches to test yield variations, cost inflations, and planning options.
@@ -639,54 +630,21 @@ export const ProjectDetailView: React.FC<ProjectDetailViewProps> = ({
                 onClick={() => setIsScenarioModalOpen(true)}
               >
                 <Plus size={16} />
-                <span>Create Scenario</span>
+                <span>Create New Scenario</span>
               </button>
             </div>
 
-            <div style={{ display: 'grid', gap: '16px' }}>
-              {project.scenarios.map((scen) => (
-                <div
-                  key={scen.id}
-                  className="content-card"
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 0,
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        {scen.name}
-                      </h4>
-                      {scen.is_baseline ? (
-                        <span className="badge badge-baseline">Primary Baseline</span>
-                      ) : (
-                        <span className="badge badge-draft">Alternate Scheme</span>
-                      )}
-                    </div>
-                    <p style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                      {scen.description || 'No scenario description provided.'}
-                    </p>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                      Created: {new Date(scen.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-
-                  <div>
-                    {!scen.is_baseline && (
-                      <button
-                        className="btn btn-secondary btn-sm"
-                        onClick={() => handleSetBaseline(scen.id)}
-                      >
-                        <span>Set as Baseline</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ScenarioComparisonMatrix
+              projectId={project.id}
+              onScenarioSelected={(scenId) => {
+                setSelectedScenarioId(scenId);
+                setActiveTab('overview');
+              }}
+              onScenariosChanged={() => {
+                // Refresh project details
+                api.getProject(project.id).then((p) => onProjectUpdated(p)).catch(() => {});
+              }}
+            />
           </div>
         )}
 
